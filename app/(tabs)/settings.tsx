@@ -130,41 +130,45 @@ export default function SettingsScreen() {
 
     try {
       setIsMigrating(true);
+      console.log('🔧 Supabase設定開始...');
       await initializeSupabase(supabaseUrl.trim(), supabaseAnonKey.trim());
       setSupabaseConfigured(true);
       setShowSupabaseModal(false);
       setSupabaseUrl('');
       setSupabaseAnonKey('');
       
+      console.log('✅ Supabase設定完了');
+      
       // モックデータを移行
       Alert.alert(
         'データ移行',
-        'Supabaseの設定が完了しました。現在のモックデータをデータベースに移行しますか？',
+        'Supabaseの設定が完了しました！\n\n現在のモックデータをデータベースに移行しますか？\n\n※移行しない場合でも、新しいデータはSupabaseに保存されます。',
         [
           {
             text: 'スキップ',
             onPress: () => {
               setIsMigrating(false);
-              Alert.alert('完了', 'Supabaseの設定が完了しました。');
+              Alert.alert('完了', '🎉 Supabaseの設定が完了しました！\n\n新しいデータはSupabaseに保存されます。');
             }
           },
           {
             text: '移行する',
             onPress: async () => {
               try {
+                console.log('📦 モックデータ移行開始...');
                 // グローバルからモックデータを取得
                 const mockTables = (global as any).getAllTables?.() || [];
                 const mockOrderHistory = (global as any).getOrderHistory?.() || [];
                 
                 if (migrateMockData) {
                   await migrateMockData(mockTables, initialMenuItems, mockOrderHistory);
-                  Alert.alert('成功', 'モックデータがSupabaseに移行されました！');
+                  Alert.alert('成功', '🎉 モックデータがSupabaseに移行されました！\n\n今後のデータはSupabaseに自動保存されます。');
                 } else {
                   Alert.alert('エラー', 'データ移行機能が利用できません');
                 }
               } catch (error) {
                 console.error('移行エラー:', error);
-                Alert.alert('エラー', 'データ移行中にエラーが発生しました');
+                Alert.alert('エラー', `データ移行中にエラーが発生しました:\n\n${error instanceof Error ? error.message : '不明なエラー'}`);
               } finally {
                 setIsMigrating(false);
               }
@@ -174,7 +178,11 @@ export default function SettingsScreen() {
       );
     } catch (error) {
       setIsMigrating(false);
-      Alert.alert('エラー', 'Supabaseの設定に失敗しました。URLとAPIキーを確認してください。');
+      console.error('Supabase設定エラー:', error);
+      Alert.alert(
+        'エラー', 
+        `Supabaseの設定に失敗しました:\n\n${error instanceof Error ? error.message : '不明なエラー'}\n\nURLとAPIキーを確認してください。`
+      );
     }
   };
 
@@ -421,8 +429,8 @@ export default function SettingsScreen() {
             }
             title="Supabase接続"
             subtitle={supabaseConfigured ? 
-              "データベースに接続済み" : 
-              "データベースに未接続 - 設定が必要です"
+              "✅ データベースに接続済み - データは自動保存されます" : 
+              "⚠️ データベースに未接続 - 現在はローカルデータのみ"
             }
             onPress={() => setShowSupabaseModal(true)}
           />
@@ -430,7 +438,7 @@ export default function SettingsScreen() {
             <SettingItem
               icon={<Trash2 size={24} color="#EF4444" />}
               title="データベース設定をリセット"
-              subtitle="Supabase接続設定を削除"
+              subtitle="⚠️ Supabase接続設定を削除（ローカルデータに戻ります）"
               onPress={handleSupabaseReset}
             />
           )}
@@ -866,7 +874,8 @@ export default function SettingsScreen() {
             
             <View style={styles.supabaseForm}>
               <Text style={styles.formDescription}>
-                Supabaseプロジェクトの設定情報を入力してください
+                Supabaseプロジェクトの設定情報を入力してください。
+                {'\n'}設定後、データは自動的にクラウドに保存されます。
               </Text>
               
               <Text style={styles.inputLabel}>Project URL</Text>
@@ -893,7 +902,8 @@ export default function SettingsScreen() {
               
               <View style={styles.helpText}>
                 <Text style={styles.helpTextContent}>
-                  これらの情報はSupabaseプロジェクトの「Settings」→「API」で確認できます
+                  💡 これらの情報はSupabaseプロジェクトの「Settings」→「API」で確認できます。
+                  {'\n'}📱 設定後、アプリのデータは自動的にクラウドに同期されます。
                 </Text>
               </View>
               

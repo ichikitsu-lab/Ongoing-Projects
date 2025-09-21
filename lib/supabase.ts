@@ -3,13 +3,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let supabase: SupabaseClient | null = null;
 
+// Supabaseクライアントの初期化
 export const initializeSupabase = async (url: string, anonKey: string) => {
   try {
-    supabase = createClient(url, anonKey);
+    supabase = createClient(url, anonKey, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    });
     
     // 設定を保存
     await AsyncStorage.setItem('supabase_url', url);
     await AsyncStorage.setItem('supabase_anon_key', anonKey);
+    
+    console.log('✅ Supabase初期化完了');
     
     return supabase;
   } catch (error) {
