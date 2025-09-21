@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id                   String   @id @default(cuid())
+  name                 String
+  team                 String
+  qualifications       Json     @default("[]")
+  availableHoursStart  String   @map("available_hours_start") @default("08:00")
+  availableHoursEnd    String   @map("available_hours_end") @default("18:00")
+  availableAreas       Json     @default("[]")
+  notes                String   @default("")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  projectAssignments   ProjectMemberAssignment[]
+  leadProjects         Project[] @relation("ProjectLeader")
+
+  @@map("members")
+}
+
+model ExternalPartner {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  projectAssignments ProjectExternalPartnerAssignment[]
+
+  @@map("external_partners")
+}
+
+model Project {
+  id              String   @id @default(cuid())
+  name            String
+  date            String
+  workTimeStart   String   @map("work_time_start")
+  workTimeEnd     String   @map("work_time_end")
+  location        String
+  workContent     String   @default("") @map("work_content")
+  requiredMembers Int      @default(1) @map("required_members")
+  notes           String   @default("")
+  leadMemberId    String?  @map("lead_member_id")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  leadMember              Member?                            @relation("ProjectLeader", fields: [leadMemberId], references: [id])
+  memberAssignments       ProjectMemberAssignment[]
+  externalPartnerAssignments ProjectExternalPartnerAssignment[]
+
+  @@map("projects")
+}
+
+model ProjectMemberAssignment {
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  memberId  String   @map("member_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, memberId])
+  @@map("project_member_assignments")
+}
+
+model ProjectExternalPartnerAssignment {
+  id                 String   @id @default(cuid())
+  projectId          String   @map("project_id")
+  partnerId          String   @map("partner_id")
+  memberCount        Int      @default(1) @map("member_count")
+  representativeName String   @default("") @map("representative_name")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  partner ExternalPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, partnerId])
+  @@map("project_external_partner_assignments")
+}
